@@ -15,13 +15,13 @@ import { useInverter } from './useInverter'
 import { useSlot0 } from './useSlot0'
 import { useV3PositionFees } from './useV3PositionFees'
 
-const useFullPosition = ({
+export const useFullPosition = (
   idPool,
   chainId,
   listAllTokenSupport,
   web3,
   callback
-}) => {
+) => {
   const [tokenPre, setTokenPre] = useState(null)
   const [tokenSub, setTokenSub] = useState(null)
   const [positionBasic, setPositionBasic] = useState(null)
@@ -187,4 +187,3 @@ const useFullPosition = ({
     priceTokenPair
   }
 }
-export default useFullPosition
