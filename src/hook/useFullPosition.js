@@ -66,7 +66,7 @@ export const useFullPosition = (
         setPositionBasic(null),
         setRatioLiquidity(0)
       ])
-      getPositions(getPositionUniswapAddress(chainId, web3), idPool, web3).then(
+      getPositions(getPositionUniswapAddress(chainId), idPool, web3).then(
         async (pos) => {
           if (pos.liquidity) {
             Promise.all([setIsChangeToken(true)]).then(async () => {
@@ -88,6 +88,10 @@ export const useFullPosition = (
                 })
               })
             })
+          } else {
+            console.log('====================================')
+            console.log({ pos })
+            console.log('====================================')
           }
         }
       )
@@ -184,6 +188,7 @@ export const useFullPosition = (
     positionBasic,
     inRange: inRange?.valueOf(),
     loading,
-    priceTokenPair
+    priceTokenPair,
+    web3
   }
 }
