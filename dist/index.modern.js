@@ -1,7 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { Pool, Position, computePoolAddress } from '@uniswap/v3-sdk';
+import { BigNumber } from 'ethers';
+import { getAddressPool as getAddressPool$1 } from 'packagePosition/service/function';
 
 var useInverter = function useInverter(pricesFromPosition, invert) {
-  var _inverter$priceLower, _inverter$priceUpper, _inverter$base;
+  var _inverter$priceLower, _inverter$priceUpper, _inverter$base, _inverter$quote;
   if (invert === void 0) {
     invert = false;
   }
@@ -19,27 +22,24 @@ var useInverter = function useInverter(pricesFromPosition, invert) {
   return {
     priceLower: (_inverter$priceLower = inverter === null || inverter === void 0 ? void 0 : inverter.priceLower) != null ? _inverter$priceLower : null,
     priceUpper: (_inverter$priceUpper = inverter === null || inverter === void 0 ? void 0 : inverter.priceUpper) != null ? _inverter$priceUpper : null,
-    base: (_inverter$base = inverter === null || inverter === void 0 ? void 0 : inverter.base) != null ? _inverter$base : null
+    base: (_inverter$base = inverter === null || inverter === void 0 ? void 0 : inverter.base) != null ? _inverter$base : null,
+    quote: (_inverter$quote = inverter === null || inverter === void 0 ? void 0 : inverter.quote) != null ? _inverter$quote : null
   };
 };
 
-var uni = require('@uniswap/v3-sdk');
-var Pool = uni.Pool;
-var usePool = function usePool(token0, token1, slot0, positionBasic) {
+var usePool = function usePool(token0, token1, slot0, positionBasic, isChangeToken) {
   var poolHook = useMemo(function () {
-    if (token0 && token1 && positionBasic && slot0) {
+    if (token0 && token1 && positionBasic && slot0 && !isChangeToken) {
       return new Pool(token0, token1, positionBasic.fee, slot0.sqrtPriceX96, positionBasic.liquidity, slot0.tick);
     }
     return null;
-  }, [token0, token1, slot0, positionBasic]);
+  }, [token0, token1, slot0, positionBasic, isChangeToken]);
   return {
     poolHook: poolHook,
     priceTokenPair: poolHook === null || poolHook === void 0 ? void 0 : poolHook.token1Price.toSignificant(6)
   };
 };
 
-var uni$1 = require('@uniswap/v3-sdk');
-var Position = uni$1.Position;
 var usePosition = function usePosition(pool, positionBasic) {
   var position = useMemo(function () {
     if (pool && pool && positionBasic.liquidity && typeof (positionBasic === null || positionBasic === void 0 ? void 0 : positionBasic.tickLower) === 'number' && typeof (positionBasic === null || positionBasic === void 0 ? void 0 : positionBasic.tickUpper) === 'number') {
@@ -72,11 +72,12 @@ function _extends() {
   return _extends.apply(this, arguments);
 }
 
-var _extends2;
+var _extends2, _extends3;
 var FACTORY_ADDRESS = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
 var ADDRESS_ZERO = '0x0000000000000000000000000000000000000000';
 var POOL_INIT_CODE_HASH = '0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54';
 var CELO_NONFUNGIBLE_POSITION_MANAGER_ADDRESSES = '0x3d79EdAaBC0EaB6F08ED885C05Fc0B014290D95A';
+var CELO_V3_CORE_FACTORY_ADDRESSES = '0xAfE208a311B21f13EF87E33A90049fC17A7acDEc';
 var SupportedChainId = {
   MAINNET: 1,
   ROPSTEN: 3,
@@ -113,6 +114,7 @@ var CHAIN_NETWORK_WITH_CHAIN_NAME = {
   celo_alfajores: 44787,
   arbitrum: 42161
 };
+var V3_CORE_FACTORY_ADDRESSES = _extends({}, constructSameAddressMap('0x1F98431c8aD98523631AE4a59f267346ea31F984', [SupportedChainId.OPTIMISM, SupportedChainId.OPTIMISM_GOERLI, SupportedChainId.ARBITRUM_ONE, SupportedChainId.ARBITRUM_RINKEBY, SupportedChainId.POLYGON_MUMBAI, SupportedChainId.POLYGON]), (_extends3 = {}, _extends3[SupportedChainId.CELO] = CELO_V3_CORE_FACTORY_ADDRESSES, _extends3[SupportedChainId.CELO_ALFAJORES] = CELO_V3_CORE_FACTORY_ADDRESSES, _extends3));
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -8405,6 +8407,163 @@ var getRatio = function getRatio(lower, current, upper) {
 var getPositionUniswapAddress = function getPositionUniswapAddress(chainId) {
   return NONFUNGIBLE_POSITION_MANAGER_ADDRESSES[chainId];
 };
+var getToken = function getToken(address, chainId, listAllToken) {
+  try {
+    return Promise.resolve(listAllToken.data.find(function (item) {
+      return item.address.includes(address);
+    })).then(function (tokenTemp) {
+      return tokenTemp ? new Token(chainId, address, tokenTemp.decimals, tokenTemp.symbol, tokenTemp.name) : null;
+    });
+  } catch (e) {
+    return Promise.reject(e);
+  }
+};
+var getPoolAddress = function getPoolAddress(factoryAddress, tokenA, tokenB, fee) {
+  try {
+    if (tokenA !== null && tokenA !== void 0 && tokenA.sortsBefore(tokenB)) {
+      return Promise.resolve(computePoolAddress({
+        factoryAddress: factoryAddress,
+        tokenA: tokenA,
+        tokenB: tokenB,
+        fee: fee
+      }));
+    }
+    return Promise.resolve(computePoolAddress({
+      factoryAddress: factoryAddress,
+      tokenB: tokenB,
+      tokenA: tokenA,
+      fee: fee
+    }));
+  } catch (e) {
+    return Promise.reject(e);
+  }
+};
+var getAddressPool = function getAddressPool(token0, token1, feeAmount, chainId) {
+  var _V3_CORE_FACTORY_ADDR;
+  var v3CoreFactoryAddress = (_V3_CORE_FACTORY_ADDR = V3_CORE_FACTORY_ADDRESSES[chainId]) != null ? _V3_CORE_FACTORY_ADDR : undefined;
+  var poolAddress = getPoolAddress(v3CoreFactoryAddress, token0, token1, feeAmount);
+  return poolAddress;
+};
+var formatLocaleNumber = function formatLocaleNumber(_ref) {
+  var number = _ref.number,
+    sigFigs = _ref.sigFigs,
+    fixedDecimals = _ref.fixedDecimals;
+  if (typeof number === 'number') {
+    return fixedDecimals ? parseFloat(number.toFixed(fixedDecimals)) : number;
+  }
+  var baseString = parseFloat(number.toSignificant(sigFigs));
+  var numberString = fixedDecimals ? parseFloat(baseString.toFixed(fixedDecimals)) : baseString;
+  return numberString;
+};
+function formatCurrencyAmount(amount, sigFigs, fixedDecimals) {
+  if (fixedDecimals === void 0) {
+    fixedDecimals = null;
+  }
+  if (!amount) {
+    return '-';
+  }
+  if (jsbiUmd.equal(amount.quotient, jsbiUmd.BigInt(0))) {
+    return '0';
+  }
+  if (amount.divide(amount.decimalScale).lessThan(new Fraction(1, 100000))) {
+    return "<" + formatLocaleNumber({
+      number: 0.00001
+    });
+  }
+  return formatLocaleNumber({
+    number: amount,
+    sigFigs: sigFigs,
+    fixedDecimals: fixedDecimals
+  });
+}
 
-export { ADDRESS_ZERO, CHAIN_NETWORK_WITH_CHAIN_NAME, CUSD_CELO, DAI, DAI_OPTIMISM, FACTORY_ADDRESS, NONFUNGIBLE_POSITION_MANAGER_ADDRESSES, POOL_INIT_CODE_HASH, STABLECOIN_AMOUNT_OUT, SupportedChainId, USDC_ARBITRUM, USDC_ARBITRUM_RINKEBY, USDC_GOERLI, USDC_KOVAN, USDC_MAINNET, USDC_OPTIMISM, USDC_OPTIMISM_GOERLI, USDC_POLYGON, USDC_POLYGON_MUMBAI, USDC_RINKEBY, USDC_ROPSTEN, USDT, WBTC, WETH9$1 as WETH9, WRAPPED_NATIVE_CURRENCY, constructSameAddressMap, getPositionUniswapAddress, getRatio, tokens, useInverter, usePool, usePosition, usePriceOrderingFromPositionForUI };
+// A type of promise-like that resolves synchronously and supports only one observer
+
+const _iteratorSymbol = /*#__PURE__*/ typeof Symbol !== "undefined" ? (Symbol.iterator || (Symbol.iterator = Symbol("Symbol.iterator"))) : "@@iterator";
+
+const _asyncIteratorSymbol = /*#__PURE__*/ typeof Symbol !== "undefined" ? (Symbol.asyncIterator || (Symbol.asyncIterator = Symbol("Symbol.asyncIterator"))) : "@@asyncIterator";
+
+var getSlot0 = function getSlot0(addressContract, web3) {
+  return new Promise(function (resolve, reject) {
+    try {
+      var minABI = [{
+        inputs: [],
+        name: 'slot0',
+        outputs: [{
+          internalType: 'uint160',
+          name: 'sqrtPriceX96',
+          type: 'uint160'
+        }, {
+          internalType: 'int24',
+          name: 'tick',
+          type: 'int24'
+        }, {
+          internalType: 'uint16',
+          name: 'observationIndex',
+          type: 'uint16'
+        }, {
+          internalType: 'uint16',
+          name: 'observationCardinality',
+          type: 'uint16'
+        }, {
+          internalType: 'uint16',
+          name: 'observationCardinalityNext',
+          type: 'uint16'
+        }, {
+          internalType: 'uint8',
+          name: 'feeProtocol',
+          type: 'uint8'
+        }, {
+          internalType: 'bool',
+          name: 'unlocked',
+          type: 'bool'
+        }],
+        stateMutability: 'view',
+        type: 'function'
+      }];
+      var contract = new web3.eth.Contract(minABI, addressContract);
+      contract.methods.slot0().call(function (err, value) {
+        if (err) {
+          resolve(0);
+        }
+        resolve(value);
+      });
+    } catch (err) {
+      resolve(0);
+    }
+  });
+};
+
+var useSlot0 = function useSlot0(token0, token1, positionBasic, chainId, web3, isChangeToken) {
+  var _useState = useState(null),
+    slot0 = _useState[0],
+    setSlot0 = _useState[1];
+  useEffect(function () {
+    var getData = function getData() {
+      try {
+        var _temp2 = function () {
+          if (token0 && token1 && positionBasic && chainId && !isChangeToken) {
+            return Promise.resolve(getAddressPool$1(token0, token1, positionBasic.fee, chainId)).then(function (_getAddressPool) {
+              getSlot0(_getAddressPool, web3).then(function (resSlot0) {
+                if (resSlot0.sqrtPriceX96) {
+                  setSlot0(_extends({}, resSlot0, {
+                    tick: Number(resSlot0.tick),
+                    sqrtPriceX96: BigNumber.from(resSlot0.sqrtPriceX96)
+                  }));
+                }
+              });
+            });
+          }
+        }();
+        return Promise.resolve(_temp2 && _temp2.then ? _temp2.then(function () {}) : void 0);
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    };
+    getData();
+  }, [token0, token1, positionBasic, isChangeToken]);
+  return slot0;
+};
+
+export { ADDRESS_ZERO, CHAIN_NETWORK_WITH_CHAIN_NAME, CUSD_CELO, DAI, DAI_OPTIMISM, FACTORY_ADDRESS, NONFUNGIBLE_POSITION_MANAGER_ADDRESSES, POOL_INIT_CODE_HASH, STABLECOIN_AMOUNT_OUT, SupportedChainId, USDC_ARBITRUM, USDC_ARBITRUM_RINKEBY, USDC_GOERLI, USDC_KOVAN, USDC_MAINNET, USDC_OPTIMISM, USDC_OPTIMISM_GOERLI, USDC_POLYGON, USDC_POLYGON_MUMBAI, USDC_RINKEBY, USDC_ROPSTEN, USDT, V3_CORE_FACTORY_ADDRESSES, WBTC, WETH9$1 as WETH9, WRAPPED_NATIVE_CURRENCY, constructSameAddressMap, formatCurrencyAmount, formatLocaleNumber, getAddressPool, getPositionUniswapAddress, getRatio, getToken, tokens, useInverter, usePool, usePosition, usePriceOrderingFromPositionForUI, useSlot0 };
 //# sourceMappingURL=index.modern.js.map

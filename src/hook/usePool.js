@@ -1,9 +1,15 @@
+import { Pool } from '@uniswap/v3-sdk'
 import { useMemo } from 'react'
-const uni = require('@uniswap/v3-sdk')
-const { Pool } = uni
-export const usePool = (token0, token1, slot0, positionBasic) => {
+
+export const usePool = (
+  token0,
+  token1,
+  slot0,
+  positionBasic,
+  isChangeToken
+) => {
   const poolHook = useMemo(() => {
-    if (token0 && token1 && positionBasic && slot0) {
+    if (token0 && token1 && positionBasic && slot0 && !isChangeToken) {
       return new Pool(
         token0,
         token1,
@@ -14,7 +20,7 @@ export const usePool = (token0, token1, slot0, positionBasic) => {
       )
     }
     return null
-  }, [token0, token1, slot0, positionBasic])
+  }, [token0, token1, slot0, positionBasic, isChangeToken])
 
   return {
     poolHook,

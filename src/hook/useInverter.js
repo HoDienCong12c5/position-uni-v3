@@ -18,6 +18,7 @@ export const useInverter = (pricesFromPosition, invert = false) => {
   return {
     priceLower: inverter?.priceLower ?? null,
     priceUpper: inverter?.priceUpper ?? null,
-    base: inverter?.base ?? null
+    base: inverter?.base ?? null,
+    quote: inverter?.quote ?? null
   }
 }

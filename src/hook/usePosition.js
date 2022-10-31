@@ -1,14 +1,17 @@
+import { Position } from '@uniswap/v3-sdk'
 import { useMemo } from 'react'
-const uni = require('@uniswap/v3-sdk')
-const { Position } = uni
-export const usePosition = (pool, positionBasic) => {
+
+export const usePosition = (
+  pool,
+  positionBasic
+) => {
   const position = useMemo(() => {
     if (
       pool &&
-      pool &&
-      positionBasic.liquidity &&
-      typeof positionBasic?.tickLower === 'number' &&
-      typeof positionBasic?.tickUpper === 'number'
+        pool &&
+        positionBasic.liquidity &&
+        typeof positionBasic?.tickLower === 'number' &&
+        typeof positionBasic?.tickUpper === 'number'
     ) {
       return new Position({
         pool,

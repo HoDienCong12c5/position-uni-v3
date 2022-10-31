@@ -1,6 +1,6 @@
 {
   "name": "position-uni-v3",
-  "version": "1.0.0",
+  "version": "2.0.2",
   "description": "Made with create-react-library",
   "author": "HoDienCong12c5",
   "license": "MIT",
@@ -51,6 +51,7 @@
     "dist"
   ],
   "dependencies": {
-    "@uniswap/v3-sdk": "^3.9.0"
+    "@uniswap/v3-sdk": "^3.9.0",
+    "ethers": "^5.7.1"
   }
 }

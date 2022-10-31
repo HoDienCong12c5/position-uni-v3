@@ -13,16 +13,41 @@ npm install --save position-uni-v3
 ## Usage
 
 ```jsx
-import React, { Component } from 'react'
+import React,{useState,useEffect} from 'react'
 
-import MyComponent from 'position-uni-v3'
-import 'position-uni-v3/dist/index.css'
-
-class Example extends Component {
-  render() {
-    return <MyComponent />
-  }
+import {  useFullPosition} from 'position-uni-v3'
+const ExamplePosition=()=>{
+  //code ...
+   const {
+    symbol,
+    priceLower,
+    priceUpper,
+    base,
+    quote,
+    liquidity,
+    unClaimFee,
+    position,
+    poolHook,
+    tokenPre,
+    tokenSub,
+    positionBasic,
+    inRange,
+    loading,
+    priceTokenPair
+  } = useFullPosition({
+    idPool: id,
+    chainId,
+    listAllTokenSupport: listToken,
+    web3: Web3Services.createWeb3Provider(),
+    callback: null
+  })
+  //code....
+  liquidity.liquidityPre
+  ///.....
 }
+
+export default ExamplePosition
+
 ```
 
 ## License
