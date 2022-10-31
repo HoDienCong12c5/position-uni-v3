@@ -35,7 +35,7 @@ export const getPositionUniswapAddress = (chainId) => {
   return NONFUNGIBLE_POSITION_MANAGER_ADDRESSES[chainId]
 }
 export const getToken = async (address, chainId, listAllToken) => {
-  const tokenTemp = await listAllToken.data.find((item) =>
+  const tokenTemp = await listAllToken.find((item) =>
     item.address.includes(address)
   )
   if (!tokenTemp) {
