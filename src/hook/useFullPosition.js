@@ -15,17 +15,18 @@ import { useInverter } from './useInverter'
 import { useSlot0 } from './useSlot0'
 import { useV3PositionFees } from './useV3PositionFees'
 
-export const useFullPosition = (
+export const useFullPosition = ({
   idPool,
   chainId,
   listAllTokenSupport,
   web3,
   callback
-) => {
+}) => {
+  const [isNoData, setIsNoData] = useState(true)
   const [tokenPre, setTokenPre] = useState(null)
   const [tokenSub, setTokenSub] = useState(null)
   const [positionBasic, setPositionBasic] = useState(null)
-  const [ratioLiquidity, setRatioLiquidity] = useState(0)
+  const [ratioLiquidity, setRatioLiquidity] = useState(-1)
   const [isChangeToken, setIsChangeToken] = useState(false)
   const [loading, setLoading] = useState(true)
   const slot0 = useSlot0(
@@ -59,44 +60,45 @@ export const useFullPosition = (
 
   useEffect(() => {
     const getDataBasic = async () => {
-      Promise.all([
-        setLoading(true),
-        setTokenPre(null),
-        setTokenSub(null),
-        setPositionBasic(null),
-        setRatioLiquidity(0)
-      ])
-      getPositions(getPositionUniswapAddress(chainId), idPool, web3).then(
-        async (pos) => {
-          if (pos.liquidity) {
-            Promise.all([setIsChangeToken(true)]).then(async () => {
-              Promise.all([
-                setTokenPre(
-                  await getToken(pos.token0, chainId, listAllTokenSupport)
-                ),
-                setTokenSub(
-                  await getToken(pos.token1, chainId, listAllTokenSupport)
-                )
-              ]).then(() => {
-                setIsChangeToken(false)
-                setPositionBasic({
-                  ...pos,
-                  fee: Number(pos.fee),
-                  liquidity: BigNumber.from(pos.liquidity),
-                  tickLower: Number(pos.tickLower),
-                  tickUpper: Number(pos.tickUpper)
+      Promise.all([setLoading(true)]).then(() => {
+        Promise.all([
+          setTokenPre(null),
+          setTokenSub(null),
+          setPositionBasic(null),
+          setRatioLiquidity(-1)
+        ])
+        getPositions(getPositionUniswapAddress(chainId), idPool, web3).then(
+          async (pos) => {
+            if (pos.liquidity) {
+              Promise.all([setIsChangeToken(true)]).then(async () => {
+                Promise.all([
+                  setTokenPre(
+                    await getToken(pos.token0, chainId, listAllTokenSupport)
+                  ),
+                  setTokenSub(
+                    await getToken(pos.token1, chainId, listAllTokenSupport)
+                  )
+                ]).then(() => {
+                  setIsChangeToken(false)
+                  setPositionBasic({
+                    ...pos,
+                    fee: Number(pos.fee),
+                    liquidity: BigNumber.from(pos.liquidity),
+                    tickLower: Number(pos.tickLower),
+                    tickUpper: Number(pos.tickUpper)
+                  })
+                  setIsNoData(false)
                 })
               })
-            })
-          } else {
-            console.log('====================================')
-            console.log({ pos })
-            console.log('====================================')
+            } else {
+              console.log({ pos })
+              setIsNoData(true)
+            }
           }
-        }
-      )
+        )
+      })
     }
-    if (listAllTokenSupport.length > 0 && chainId) {
+    if (listAllTokenSupport.data.length > 0 && chainId) {
       getDataBasic()
     }
   }, [chainId, listAllTokenSupport])
@@ -108,7 +110,7 @@ export const useFullPosition = (
         poolHook.token0Price,
         inverted ? priceUpper : priceLower.invert()
       )
-      setRatioLiquidity(ratio)
+      setRatioLiquidity(Number(ratio))
     }
   }, [tokenSub, tokenPre, position, poolHook, base, priceLower, priceUpper])
   const inRange = useMemo(() => {
@@ -116,7 +118,7 @@ export const useFullPosition = (
       const below =
         poolHook && Number(poolHook.tickCurrent) < Number(position?.tickLower)
       const above =
-        poolHook && typeof positionBasic.tickUpper === 'number'
+        poolHook && typeof positionBasic?.tickUpper === 'number'
           ? Number(poolHook.tickCurrent) >= Number(position?.tickUpper)
           : undefined
       const inRanges = !below && !above
@@ -189,6 +191,6 @@ export const useFullPosition = (
     inRange: inRange?.valueOf(),
     loading,
     priceTokenPair,
-    web3
+    isNoData
   }
 }
