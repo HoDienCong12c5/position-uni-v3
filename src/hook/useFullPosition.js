@@ -15,13 +15,13 @@ import { useInverter } from './useInverter'
 import { useSlot0 } from './useSlot0'
 import { useV3PositionFees } from './useV3PositionFees'
 
-export const useFullPosition = ({
+export const useFullPosition = (
   idPool,
   chainId,
   listAllTokenSupport,
   web3,
   callback
-}) => {
+) => {
   const [isNoData, setIsNoData] = useState(true)
   const [tokenPre, setTokenPre] = useState(null)
   const [tokenSub, setTokenSub] = useState(null)
@@ -29,6 +29,7 @@ export const useFullPosition = ({
   const [ratioLiquidity, setRatioLiquidity] = useState(-1)
   const [isChangeToken, setIsChangeToken] = useState(false)
   const [loading, setLoading] = useState(true)
+
   const slot0 = useSlot0(
     tokenPre,
     tokenSub,
@@ -60,52 +61,45 @@ export const useFullPosition = ({
 
   useEffect(() => {
     const getDataBasic = async () => {
-      Promise.all([setLoading(true)]).then(() => {
-        Promise.all([
-          setTokenPre(null),
-          setTokenSub(null),
-          setPositionBasic(null),
-          setRatioLiquidity(-1)
-        ])
-        getPositions(getPositionUniswapAddress(chainId), idPool, web3).then(
-          async (pos) => {
-            if (pos.liquidity) {
-              Promise.all([setIsChangeToken(true)]).then(async () => {
-                Promise.all([
-                  setTokenPre(
-                    await getToken(pos.token0, chainId, listAllTokenSupport)
-                  ),
-                  setTokenSub(
-                    await getToken(pos.token1, chainId, listAllTokenSupport)
-                  )
-                ]).then(() => {
-                  setIsChangeToken(false)
-                  setPositionBasic({
-                    ...pos,
-                    fee: Number(pos.fee),
-                    liquidity: BigNumber.from(pos.liquidity),
-                    tickLower: Number(pos.tickLower),
-                    tickUpper: Number(pos.tickUpper)
-                  })
-                  setIsNoData(false)
+      Promise.all([
+        setLoading(true),
+        setTokenPre(null),
+        setTokenSub(null),
+        setPositionBasic(null),
+        setRatioLiquidity(-1)
+      ])
+      getPositions(getPositionUniswapAddress(chainId), idPool, web3).then(
+        async (pos) => {
+          if (pos.liquidity) {
+            Promise.all([setIsChangeToken(true)]).then(async () => {
+              Promise.all([
+                setTokenPre(
+                  await getToken(pos.token0, chainId, listAllTokenSupport)
+                ),
+                setTokenSub(
+                  await getToken(pos.token1, chainId, listAllTokenSupport)
+                )
+              ]).then(() => {
+                setIsChangeToken(false)
+                setPositionBasic({
+                  ...pos,
+                  fee: Number(pos.fee),
+                  liquidity: BigNumber.from(pos.liquidity),
+                  tickLower: Number(pos.tickLower),
+                  tickUpper: Number(pos.tickUpper)
                 })
+                setIsNoData(false)
               })
-            } else {
-              console.log({ pos })
-              setIsNoData(true)
-              setLoading(false)
-            }
+            })
+          } else {
+            console.log({ pos })
+            setIsNoData(true)
+            setLoading(false)
           }
-        )
-      })
+        }
+      )
     }
-    if (
-      listAllTokenSupport &&
-      listAllTokenSupport?.length > 0 &&
-      chainId &&
-      web3 &&
-      chainId > -1
-    ) {
+    if (listAllTokenSupport && chainId && web3) {
       getDataBasic()
     }
   }, [chainId, listAllTokenSupport, web3])

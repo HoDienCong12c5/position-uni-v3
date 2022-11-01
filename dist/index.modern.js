@@ -9099,11 +9099,7 @@ function useV3PositionFees(pool, tokenId, web3, chainId, asWETH) {
   }
 }
 
-var useFullPosition = function useFullPosition(_ref) {
-  var idPool = _ref.idPool,
-    chainId = _ref.chainId,
-    listAllTokenSupport = _ref.listAllTokenSupport,
-    web3 = _ref.web3;
+var useFullPosition = function useFullPosition(idPool, chainId, listAllTokenSupport, web3, callback) {
   var _useState = useState(true),
     isNoData = _useState[0],
     setIsNoData = _useState[1];
@@ -9143,51 +9139,49 @@ var useFullPosition = function useFullPosition(_ref) {
   useEffect(function () {
     var getDataBasic = function getDataBasic() {
       try {
-        Promise.all([setLoading(true)]).then(function () {
-          Promise.all([setTokenPre(null), setTokenSub(null), setPositionBasic(null), setRatioLiquidity(-1)]);
-          getPositions(getPositionUniswapAddress(chainId), idPool, web3).then(function (pos) {
-            try {
-              if (pos.liquidity) {
-                Promise.all([setIsChangeToken(true)]).then(function () {
-                  try {
-                    return Promise.resolve(getToken(pos.token0, chainId, listAllTokenSupport)).then(function (_getToken) {
-                      var _setTokenPre = setTokenPre(_getToken);
-                      return Promise.resolve(getToken(pos.token1, chainId, listAllTokenSupport)).then(function (_getToken2) {
-                        Promise.all([_setTokenPre, setTokenSub(_getToken2)]).then(function () {
-                          setIsChangeToken(false);
-                          setPositionBasic(_extends({}, pos, {
-                            fee: Number(pos.fee),
-                            liquidity: BigNumber$1.from(pos.liquidity),
-                            tickLower: Number(pos.tickLower),
-                            tickUpper: Number(pos.tickUpper)
-                          }));
-                          setIsNoData(false);
-                        });
+        Promise.all([setLoading(true), setTokenPre(null), setTokenSub(null), setPositionBasic(null), setRatioLiquidity(-1)]);
+        getPositions(getPositionUniswapAddress(chainId), idPool, web3).then(function (pos) {
+          try {
+            if (pos.liquidity) {
+              Promise.all([setIsChangeToken(true)]).then(function () {
+                try {
+                  return Promise.resolve(getToken(pos.token0, chainId, listAllTokenSupport)).then(function (_getToken) {
+                    var _setTokenPre = setTokenPre(_getToken);
+                    return Promise.resolve(getToken(pos.token1, chainId, listAllTokenSupport)).then(function (_getToken2) {
+                      Promise.all([_setTokenPre, setTokenSub(_getToken2)]).then(function () {
+                        setIsChangeToken(false);
+                        setPositionBasic(_extends({}, pos, {
+                          fee: Number(pos.fee),
+                          liquidity: BigNumber$1.from(pos.liquidity),
+                          tickLower: Number(pos.tickLower),
+                          tickUpper: Number(pos.tickUpper)
+                        }));
+                        setIsNoData(false);
                       });
                     });
-                  } catch (e) {
-                    return Promise.reject(e);
-                  }
-                });
-              } else {
-                console.log({
-                  pos: pos
-                });
-                setIsNoData(true);
-                setLoading(false);
-              }
-              return Promise.resolve();
-            } catch (e) {
-              return Promise.reject(e);
+                  });
+                } catch (e) {
+                  return Promise.reject(e);
+                }
+              });
+            } else {
+              console.log({
+                pos: pos
+              });
+              setIsNoData(true);
+              setLoading(false);
             }
-          });
+            return Promise.resolve();
+          } catch (e) {
+            return Promise.reject(e);
+          }
         });
         return Promise.resolve();
       } catch (e) {
         return Promise.reject(e);
       }
     };
-    if (listAllTokenSupport && (listAllTokenSupport === null || listAllTokenSupport === void 0 ? void 0 : listAllTokenSupport.length) > 0 && chainId && web3 && chainId > -1) {
+    if (listAllTokenSupport && chainId && web3) {
       getDataBasic();
     }
   }, [chainId, listAllTokenSupport, web3]);
@@ -9221,8 +9215,8 @@ var useFullPosition = function useFullPosition(_ref) {
       var b = formatCurrencyAmount(feeValue1, 4).toString().includes('<') ? 0 : formatCurrencyAmount(feeValue1, 4);
       var sum = 0;
       if (typeof a === 'number' && typeof b === 'number') {
-        var _ref2;
-        sum = Number((_ref2 = a + b) === null || _ref2 === void 0 ? void 0 : _ref2.toFixed(2));
+        var _ref;
+        sum = Number((_ref = a + b) === null || _ref === void 0 ? void 0 : _ref.toFixed(2));
       }
       return {
         sum: sum,

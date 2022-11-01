@@ -5,7 +5,6 @@ import {
   WRAPPED_NATIVE_CURRENCY,
   WBTC
 } from '../constants/tokens'
-
 import { useMemo } from 'react'
 
 export const usePriceOrderingFromPositionForUI = (position) => {
