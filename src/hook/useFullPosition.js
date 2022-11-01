@@ -93,15 +93,22 @@ export const useFullPosition = ({
             } else {
               console.log({ pos })
               setIsNoData(true)
+              setLoading(false)
             }
           }
         )
       })
     }
-    if (listAllTokenSupport.length > 0 && chainId) {
+    if (
+      listAllTokenSupport &&
+      listAllTokenSupport?.length > 0 &&
+      chainId &&
+      web3 &&
+      chainId > -1
+    ) {
       getDataBasic()
     }
-  }, [chainId, listAllTokenSupport])
+  }, [chainId, listAllTokenSupport, web3])
   useEffect(() => {
     if (position && poolHook && tokenPre) {
       const inverted = tokenSub ? base?.equals(tokenSub) : undefined
@@ -124,6 +131,7 @@ export const useFullPosition = ({
       const inRanges = !below && !above
       return inRanges
     }
+    return null
   }, [poolHook, position, positionBasic])
   const symbol = useMemo(() => {
     if (tokenPre && tokenSub) {
@@ -143,7 +151,7 @@ export const useFullPosition = ({
         : formatCurrencyAmount(feeValue1, 4)
       let sum = 0
       if (typeof a === 'number' && typeof b === 'number') {
-        sum = Number(a + b)?.toFixed(2)
+        sum = Number((a + b)?.toFixed(2))
       }
       return {
         sum,
@@ -151,6 +159,7 @@ export const useFullPosition = ({
         unClaimFeeSub: formatCurrencyAmount(feeValue1, 4)
       }
     }
+    return null
   }, [tokenPre, tokenSub, feeValue0, feeValue1])
   const liquidity = useMemo(() => {
     if (position) {
@@ -191,6 +200,7 @@ export const useFullPosition = ({
     inRange: inRange?.valueOf(),
     loading,
     priceTokenPair,
-    isNoData
+    isNoData,
+    web3
   }
 }
