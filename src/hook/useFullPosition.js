@@ -98,7 +98,7 @@ export const useFullPosition = ({
         )
       })
     }
-    if (listAllTokenSupport.data.length > 0 && chainId) {
+    if (listAllTokenSupport.length > 0 && chainId) {
       getDataBasic()
     }
   }, [chainId, listAllTokenSupport])
