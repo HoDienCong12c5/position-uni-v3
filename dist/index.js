@@ -9090,27 +9090,27 @@ function useV3PositionFees(pool, tokenId, web3, chainId, asWETH) {
 }
 
 var useFullPosition = function useFullPosition(idPool, chainId, listAllTokenSupport, web3, callback) {
-  var _useState = react.useState(true),
-    isNoData = _useState[0],
-    setIsNoData = _useState[1];
+  var _useState = react.useState(null),
+    tokenPre = _useState[0],
+    setTokenPre = _useState[1];
   var _useState2 = react.useState(null),
-    tokenPre = _useState2[0],
-    setTokenPre = _useState2[1];
+    tokenSub = _useState2[0],
+    setTokenSub = _useState2[1];
   var _useState3 = react.useState(null),
-    tokenSub = _useState3[0],
-    setTokenSub = _useState3[1];
-  var _useState4 = react.useState(null),
-    positionBasic = _useState4[0],
-    setPositionBasic = _useState4[1];
-  var _useState5 = react.useState(-1),
-    ratioLiquidity = _useState5[0],
-    setRatioLiquidity = _useState5[1];
-  var _useState6 = react.useState(false),
-    isChangeToken = _useState6[0],
-    setIsChangeToken = _useState6[1];
-  var _useState7 = react.useState(true),
-    loading = _useState7[0],
-    setLoading = _useState7[1];
+    positionBasic = _useState3[0],
+    setPositionBasic = _useState3[1];
+  var _useState4 = react.useState(0),
+    ratioLiquidity = _useState4[0],
+    setRatioLiquidity = _useState4[1];
+  var _useState5 = react.useState(false),
+    isChangeToken = _useState5[0],
+    setIsChangeToken = _useState5[1];
+  var _useState6 = react.useState(true),
+    loading = _useState6[0],
+    setLoading = _useState6[1];
+  var _useState7 = react.useState(false),
+    isNodata = _useState7[0],
+    setIsNodata = _useState7[1];
   var slot0 = useSlot0(tokenPre, tokenSub, positionBasic, chainId, web3, isChangeToken);
   var _usePool = usePool(tokenPre, tokenSub, slot0, positionBasic, isChangeToken),
     poolHook = _usePool.poolHook,
@@ -9129,7 +9129,7 @@ var useFullPosition = function useFullPosition(idPool, chainId, listAllTokenSupp
   react.useEffect(function () {
     var getDataBasic = function getDataBasic() {
       try {
-        Promise.all([setLoading(true), setTokenPre(null), setTokenSub(null), setPositionBasic(null), setRatioLiquidity(-1)]);
+        Promise.all([setIsNodata(false), setLoading(true), setTokenPre(null), setTokenSub(null), setPositionBasic(null), setRatioLiquidity(0)]);
         getPositions(getPositionUniswapAddress(chainId), idPool, web3).then(function (pos) {
           try {
             if (pos.liquidity) {
@@ -9146,7 +9146,6 @@ var useFullPosition = function useFullPosition(idPool, chainId, listAllTokenSupp
                           tickLower: Number(pos.tickLower),
                           tickUpper: Number(pos.tickUpper)
                         }));
-                        setIsNoData(false);
                       });
                     });
                   });
@@ -9155,11 +9154,8 @@ var useFullPosition = function useFullPosition(idPool, chainId, listAllTokenSupp
                 }
               });
             } else {
-              console.log({
-                pos: pos
-              });
-              setIsNoData(true);
-              setLoading(false);
+              console.log('error get contract :', pos);
+              Promise.all([setLoading(false), setIsNodata(true)]);
             }
             return Promise.resolve();
           } catch (e) {
@@ -9171,25 +9167,24 @@ var useFullPosition = function useFullPosition(idPool, chainId, listAllTokenSupp
         return Promise.reject(e);
       }
     };
-    if (listAllTokenSupport && chainId && web3) {
+    if (listAllTokenSupport && chainId && idPool) {
       getDataBasic();
     }
-  }, [chainId, listAllTokenSupport, web3]);
+  }, [chainId, listAllTokenSupport, idPool]);
   react.useEffect(function () {
     if (position && poolHook && tokenPre) {
       var inverted = tokenSub ? base === null || base === void 0 ? void 0 : base.equals(tokenSub) : undefined;
       var ratio = getRatio(inverted ? priceLower : priceUpper.invert(), poolHook.token0Price, inverted ? priceUpper : priceLower.invert());
-      setRatioLiquidity(Number(ratio));
+      setRatioLiquidity(ratio);
     }
   }, [tokenSub, tokenPre, position, poolHook, base, priceLower, priceUpper]);
   var inRange = react.useMemo(function () {
     if (position && poolHook) {
       var below = poolHook && Number(poolHook.tickCurrent) < Number(position === null || position === void 0 ? void 0 : position.tickLower);
-      var above = poolHook && typeof (positionBasic === null || positionBasic === void 0 ? void 0 : positionBasic.tickUpper) === 'number' ? Number(poolHook.tickCurrent) >= Number(position === null || position === void 0 ? void 0 : position.tickUpper) : undefined;
+      var above = poolHook && typeof positionBasic.tickUpper === 'number' ? Number(poolHook.tickCurrent) >= Number(position === null || position === void 0 ? void 0 : position.tickUpper) : undefined;
       var inRanges = !below && !above;
       return inRanges;
     }
-    return null;
   }, [poolHook, position, positionBasic]);
   var symbol = react.useMemo(function () {
     if (tokenPre && tokenSub) {
@@ -9205,8 +9200,8 @@ var useFullPosition = function useFullPosition(idPool, chainId, listAllTokenSupp
       var b = formatCurrencyAmount(feeValue1, 4).toString().includes('<') ? 0 : formatCurrencyAmount(feeValue1, 4);
       var sum = 0;
       if (typeof a === 'number' && typeof b === 'number') {
-        var _ref;
-        sum = Number((_ref = a + b) === null || _ref === void 0 ? void 0 : _ref.toFixed(2));
+        var _Number;
+        sum = (_Number = Number(a + b)) === null || _Number === void 0 ? void 0 : _Number.toFixed(2);
       }
       return {
         sum: sum,
@@ -9214,7 +9209,6 @@ var useFullPosition = function useFullPosition(idPool, chainId, listAllTokenSupp
         unClaimFeeSub: formatCurrencyAmount(feeValue1, 4)
       };
     }
-    return null;
   }, [tokenPre, tokenSub, feeValue0, feeValue1]);
   var liquidity = react.useMemo(function () {
     if (position) {
@@ -9252,8 +9246,7 @@ var useFullPosition = function useFullPosition(idPool, chainId, listAllTokenSupp
     inRange: inRange === null || inRange === void 0 ? void 0 : inRange.valueOf(),
     loading: loading,
     priceTokenPair: priceTokenPair,
-    isNoData: isNoData,
-    web3: web3
+    isNodata: isNodata
   };
 };
 

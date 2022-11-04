@@ -22,14 +22,13 @@ export const useFullPosition = (
   web3,
   callback
 ) => {
-  const [isNoData, setIsNoData] = useState(true)
   const [tokenPre, setTokenPre] = useState(null)
   const [tokenSub, setTokenSub] = useState(null)
   const [positionBasic, setPositionBasic] = useState(null)
-  const [ratioLiquidity, setRatioLiquidity] = useState(-1)
+  const [ratioLiquidity, setRatioLiquidity] = useState(0)
   const [isChangeToken, setIsChangeToken] = useState(false)
   const [loading, setLoading] = useState(true)
-
+  const [isNodata, setIsNodata] = useState(false)
   const slot0 = useSlot0(
     tokenPre,
     tokenSub,
@@ -62,11 +61,12 @@ export const useFullPosition = (
   useEffect(() => {
     const getDataBasic = async () => {
       Promise.all([
+        setIsNodata(false),
         setLoading(true),
         setTokenPre(null),
         setTokenSub(null),
         setPositionBasic(null),
-        setRatioLiquidity(-1)
+        setRatioLiquidity(0)
       ])
       getPositions(getPositionUniswapAddress(chainId), idPool, web3).then(
         async (pos) => {
@@ -88,21 +88,19 @@ export const useFullPosition = (
                   tickLower: Number(pos.tickLower),
                   tickUpper: Number(pos.tickUpper)
                 })
-                setIsNoData(false)
               })
             })
           } else {
-            console.log({ pos })
-            setIsNoData(true)
-            setLoading(false)
+            console.log('error get contract :', pos)
+            Promise.all([setLoading(false), setIsNodata(true)])
           }
         }
       )
     }
-    if (listAllTokenSupport && chainId && web3) {
+    if (listAllTokenSupport && chainId && idPool) {
       getDataBasic()
     }
-  }, [chainId, listAllTokenSupport, web3])
+  }, [chainId, listAllTokenSupport, idPool])
   useEffect(() => {
     if (position && poolHook && tokenPre) {
       const inverted = tokenSub ? base?.equals(tokenSub) : undefined
@@ -111,7 +109,7 @@ export const useFullPosition = (
         poolHook.token0Price,
         inverted ? priceUpper : priceLower.invert()
       )
-      setRatioLiquidity(Number(ratio))
+      setRatioLiquidity(ratio)
     }
   }, [tokenSub, tokenPre, position, poolHook, base, priceLower, priceUpper])
   const inRange = useMemo(() => {
@@ -119,13 +117,12 @@ export const useFullPosition = (
       const below =
         poolHook && Number(poolHook.tickCurrent) < Number(position?.tickLower)
       const above =
-        poolHook && typeof positionBasic?.tickUpper === 'number'
+        poolHook && typeof positionBasic.tickUpper === 'number'
           ? Number(poolHook.tickCurrent) >= Number(position?.tickUpper)
           : undefined
       const inRanges = !below && !above
       return inRanges
     }
-    return null
   }, [poolHook, position, positionBasic])
   const symbol = useMemo(() => {
     if (tokenPre && tokenSub) {
@@ -145,7 +142,7 @@ export const useFullPosition = (
         : formatCurrencyAmount(feeValue1, 4)
       let sum = 0
       if (typeof a === 'number' && typeof b === 'number') {
-        sum = Number((a + b)?.toFixed(2))
+        sum = Number(a + b)?.toFixed(2)
       }
       return {
         sum,
@@ -153,7 +150,6 @@ export const useFullPosition = (
         unClaimFeeSub: formatCurrencyAmount(feeValue1, 4)
       }
     }
-    return null
   }, [tokenPre, tokenSub, feeValue0, feeValue1])
   const liquidity = useMemo(() => {
     if (position) {
@@ -194,7 +190,6 @@ export const useFullPosition = (
     inRange: inRange?.valueOf(),
     loading,
     priceTokenPair,
-    isNoData,
-    web3
+    isNodata
   }
 }
