@@ -93,7 +93,9 @@ export const useFullPosition = (idPool, chainId, listAllTokenSupport, web3) => {
       )
     }
     if (listAllTokenSupport && chainId && web3 && idPool) {
-      Promise.all([setLoading(true)]).then(() => {
+      Promise.all([setLoading(true), setIsNoData(false)]).then(() => {
+        console.log('again get position===================')
+        console.log({ loading })
         getDataBasic()
       })
     }
