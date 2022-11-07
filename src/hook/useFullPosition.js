@@ -92,12 +92,12 @@ export const useFullPosition = (idPool, chainId, listAllTokenSupport, web3) => {
         }
       )
     }
-    if (listAllTokenSupport && chainId && web3) {
+    if (listAllTokenSupport && chainId && web3 && idPool) {
       Promise.all([setLoading(true)]).then(() => {
         getDataBasic()
       })
     }
-  }, [chainId, listAllTokenSupport, web3])
+  }, [chainId, listAllTokenSupport, web3, idPool])
 
   const unClaimFee = useMemo(() => {
     if (tokenPre && tokenSub && feeValue0 && feeValue1) {
