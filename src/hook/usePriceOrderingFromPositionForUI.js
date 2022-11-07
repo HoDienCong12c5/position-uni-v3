@@ -24,7 +24,7 @@ export const usePriceOrderingFromPositionForUI = (position) => {
       const stables = [DAI, USDC_MAINNET, USDT]
       if (stables.some((stable) => stable.equals(token0))) {
         // console.log('token0', token0)
-        console.log('=stables coin======')
+        // console.log('=stables coin======')
         return {
           priceLower: position.token0PriceUpper.invert(),
           priceUpper: position.token0PriceLower.invert(),

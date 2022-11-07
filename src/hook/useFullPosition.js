@@ -14,21 +14,17 @@ import { usePriceOrderingFromPositionForUI } from './usePriceOrderingFromPositio
 import { useInverter } from './useInverter'
 import { useSlot0 } from './useSlot0'
 import { useV3PositionFees } from './useV3PositionFees'
+import { useGetRatioUSDC } from './useGetRatioUSDC'
 
-export const useFullPosition = (
-  idPool,
-  chainId,
-  listAllTokenSupport,
-  web3,
-  callback
-) => {
+export const useFullPosition = (idPool, chainId, listAllTokenSupport, web3) => {
+  const [isNoData, setIsNoData] = useState(true)
   const [tokenPre, setTokenPre] = useState(null)
   const [tokenSub, setTokenSub] = useState(null)
   const [positionBasic, setPositionBasic] = useState(null)
-  const [ratioLiquidity, setRatioLiquidity] = useState(0)
+  const [ratioLiquidity, setRatioLiquidity] = useState(-1)
   const [isChangeToken, setIsChangeToken] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [isNodata, setIsNodata] = useState(false)
+
   const slot0 = useSlot0(
     tokenPre,
     tokenSub,
@@ -61,12 +57,10 @@ export const useFullPosition = (
   useEffect(() => {
     const getDataBasic = async () => {
       Promise.all([
-        setIsNodata(false),
-        setLoading(true),
         setTokenPre(null),
         setTokenSub(null),
         setPositionBasic(null),
-        setRatioLiquidity(0)
+        setRatioLiquidity(-1)
       ])
       getPositions(getPositionUniswapAddress(chainId), idPool, web3).then(
         async (pos) => {
@@ -88,28 +82,56 @@ export const useFullPosition = (
                   tickLower: Number(pos.tickLower),
                   tickUpper: Number(pos.tickUpper)
                 })
+                setIsNoData(false)
               })
             })
           } else {
-            console.log('error get contract :', pos)
-            Promise.all([setLoading(false), setIsNodata(true)])
+            console.log({ pos })
+            setIsNoData(true)
+            setLoading(false)
           }
         }
       )
     }
-    if (listAllTokenSupport && chainId && idPool) {
-      getDataBasic()
+    if (listAllTokenSupport && chainId && web3) {
+      Promise.all([setLoading(true)]).then(() => {
+        getDataBasic()
+      })
     }
-  }, [chainId, listAllTokenSupport, idPool])
+  }, [chainId, listAllTokenSupport, web3])
+
+  const unClaimFee = useMemo(() => {
+    if (tokenPre && tokenSub && feeValue0 && feeValue1) {
+      const a = formatCurrencyAmount(feeValue0, 4).toString().includes('<')
+        ? 0
+        : formatCurrencyAmount(feeValue0, 4)
+      const b = formatCurrencyAmount(feeValue1, 4).toString().includes('<')
+        ? 0
+        : formatCurrencyAmount(feeValue1, 4)
+      let sum = 0
+      if (typeof a === 'number' && typeof b === 'number') {
+        sum = Number((a + b)?.toFixed(2))
+      }
+      return {
+        sum,
+        unClaimFeePre: formatCurrencyAmount(feeValue0, 4),
+        unClaimFeeSub: formatCurrencyAmount(feeValue1, 4)
+      }
+    }
+    return null
+  }, [tokenPre, tokenSub, feeValue0, feeValue1])
+
   useEffect(() => {
-    if (position && poolHook && tokenPre) {
+    if (position && poolHook && tokenPre && base) {
       const inverted = tokenSub ? base?.equals(tokenSub) : undefined
       const ratio = getRatio(
         inverted ? priceLower : priceUpper.invert(),
         poolHook.token0Price,
         inverted ? priceUpper : priceLower.invert()
       )
-      setRatioLiquidity(ratio)
+      if (ratioLiquidity >= -1 && Number(ratio) >= 0) {
+        setRatioLiquidity(Number(ratio))
+      }
     }
   }, [tokenSub, tokenPre, position, poolHook, base, priceLower, priceUpper])
   const inRange = useMemo(() => {
@@ -123,6 +145,7 @@ export const useFullPosition = (
       const inRanges = !below && !above
       return inRanges
     }
+    return null
   }, [poolHook, position, positionBasic])
   const symbol = useMemo(() => {
     if (tokenPre && tokenSub) {
@@ -132,48 +155,34 @@ export const useFullPosition = (
       }
     }
   }, [tokenPre, tokenSub])
-  const unClaimFee = useMemo(() => {
-    if (tokenPre && tokenSub) {
-      const a = formatCurrencyAmount(feeValue0, 4).toString().includes('<')
-        ? 0
-        : formatCurrencyAmount(feeValue0, 4)
-      const b = formatCurrencyAmount(feeValue1, 4).toString().includes('<')
-        ? 0
-        : formatCurrencyAmount(feeValue1, 4)
-      let sum = 0
-      if (typeof a === 'number' && typeof b === 'number') {
-        sum = Number(a + b)?.toFixed(2)
+
+  const liquidity = useMemo(() => {
+    if (position && ratioLiquidity >= -1) {
+      let ratioPre = ratioLiquidity
+      let ratioSub = 100 - ratioLiquidity
+      if (
+        Number(position?.amount0.toSignificant(4) ?? 0) === 0 &&
+        Number(position?.amount1.toSignificant(4) ?? 0) === 0
+      ) {
+        ratioSub = 0
+        ratioPre = 0
       }
       return {
-        sum,
-        unClaimFeePre: formatCurrencyAmount(feeValue0, 4),
-        unClaimFeeSub: formatCurrencyAmount(feeValue1, 4)
+        liquidityPre: position?.amount0.toSignificant(4),
+        ratioPre,
+        liquiditySub: position?.amount1.toSignificant(4),
+        ratioSub
       }
     }
-  }, [tokenPre, tokenSub, feeValue0, feeValue1])
-  const liquidity = useMemo(() => {
-    if (position) {
-      if (ratioLiquidity >= 0) {
-        let ratioPre = ratioLiquidity
-        let ratioSub = 100 - ratioLiquidity
-        if (
-          Number(position?.amount0.toSignificant(4) ?? 0) === 0 &&
-          Number(position?.amount1.toSignificant(4) ?? 0) === 0
-        ) {
-          ratioSub = 0
-          ratioPre = 0
-        }
-        setLoading(false)
-        return {
-          liquidityPre: position?.amount0.toSignificant(4),
-          ratioPre,
-          liquiditySub: position?.amount1.toSignificant(4),
-          ratioSub
-        }
-      }
-    }
+    return null
   }, [position, ratioLiquidity])
+  const ratioUSDC = useGetRatioUSDC(tokenPre, tokenSub, liquidity, position)
 
+  useEffect(() => {
+    if (liquidity && unClaimFee && ratioUSDC) {
+      setLoading(false)
+    }
+  }, [liquidity, unClaimFee, ratioUSDC])
   return {
     symbol,
     priceLower,
@@ -190,6 +199,9 @@ export const useFullPosition = (
     inRange: inRange?.valueOf(),
     loading,
     priceTokenPair,
-    isNodata
+    isNoData,
+    idPool,
+    ratioUSDC,
+    chainId
   }
 }
