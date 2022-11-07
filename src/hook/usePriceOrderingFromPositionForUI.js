@@ -17,8 +17,8 @@ export const usePriceOrderingFromPositionForUI = (position) => {
         base: null
       }
     } else {
-      const token0 = position.amount0.currency
-      const token1 = position.amount1.currency
+      const token0 = position?.amount0.currency
+      const token1 = position?.amount1.currency
 
       // if token0 is a dollar-stable asset, set it as the quote token
       const stables = [DAI, USDC_MAINNET, USDT]
@@ -51,8 +51,8 @@ export const usePriceOrderingFromPositionForUI = (position) => {
           } else {
             // otherwise, just return the default
             return {
-              priceLower: position.token0PriceLower,
-              priceUpper: position.token0PriceUpper,
+              priceLower: position?.token0PriceLower,
+              priceUpper: position?.token0PriceUpper,
               quote: token1,
               base: token0
             }
@@ -62,10 +62,10 @@ export const usePriceOrderingFromPositionForUI = (position) => {
     }
   }, [position])
   return {
-    priceLower: price.priceLower,
-    priceUpper: price.priceUpper,
-    quote: price.quote,
-    base: price.base
+    priceLower: price?.priceLower,
+    priceUpper: price?.priceUpper,
+    quote: price?.quote,
+    base: price?.base
   }
 
   // if both prices are below 1, invert

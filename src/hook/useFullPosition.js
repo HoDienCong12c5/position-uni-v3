@@ -46,8 +46,7 @@ export const useFullPosition = (idPool, chainId, listAllTokenSupport, web3) => {
     poolHook,
     idPool,
     web3,
-    chainId,
-    false
+    chainId
   )
   const { priceLower, priceUpper, base, quote } = useInverter(
     pricesFromPositionHook,
