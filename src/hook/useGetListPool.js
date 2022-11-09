@@ -31,6 +31,8 @@ export const useListPoolByAddress = (chainId, address) => {
         ).then((numberPool) => {
           setBalanceOfUser(Number(numberPool.toString()))
         })
+      } else {
+        setBalanceOfUser(0)
       }
     }
   }, [chainId, address])
