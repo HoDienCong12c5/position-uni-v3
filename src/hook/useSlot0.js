@@ -13,23 +13,26 @@ export const useSlot0 = (
   const [slot0, setSlot0] = useState(null)
   useEffect(() => {
     const getData = async () => {
-      if (token0 && token1 && positionBasic && chainId && !isChangeToken) {
-        getSlot0(
-          await getAddressPool(token0, token1, positionBasic.fee, chainId),
-          web3
-        ).then((resSlot0) => {
-          if (resSlot0.sqrtPriceX96) {
-            setSlot0({
-              ...resSlot0,
-              tick: Number(resSlot0.tick),
-              sqrtPriceX96: BigNumber.from(resSlot0.sqrtPriceX96)
-            })
-          }
-        })
+      if (!isChangeToken) {
+        if (token0 && token1 && positionBasic && chainId) {
+          getSlot0(
+            getAddressPool(token0, token1, positionBasic.fee, chainId),
+            web3
+          ).then((resSlot0) => {
+            if (resSlot0.sqrtPriceX96) {
+              setSlot0({
+                ...resSlot0,
+                tick: Number(resSlot0.tick),
+                sqrtPriceX96: BigNumber.from(resSlot0.sqrtPriceX96)
+              })
+            }
+          })
+        }
       }
     }
+    setSlot0(null)
     getData()
-  }, [token0, token1, positionBasic, isChangeToken])
+  }, [token0, token1, positionBasic, isChangeToken, chainId])
 
   return slot0
 }

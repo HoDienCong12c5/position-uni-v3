@@ -2,11 +2,11 @@ import { Position } from '@uniswap/v3-sdk'
 import { useMemo } from 'react'
 
 export const usePosition = (pool, positionBasic) => {
-  const position = useMemo(() => {
+  const positionSDK = useMemo(() => {
     if (
       pool &&
       pool &&
-      positionBasic.liquidity &&
+      positionBasic?.liquidity &&
       typeof positionBasic?.tickLower === 'number' &&
       typeof positionBasic?.tickUpper === 'number'
     ) {
@@ -19,5 +19,5 @@ export const usePosition = (pool, positionBasic) => {
     }
     return null
   }, [pool, positionBasic])
-  return { position }
+  return { positionSDK }
 }

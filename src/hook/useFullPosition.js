@@ -1,108 +1,92 @@
-import { usePool } from './usePool'
-import { useMemo, useState, useEffect } from 'react'
-import {
-  getToken,
-  getPositionUniswapAddress,
-  formatCurrencyAmount,
-  getRatio
-} from '../service/function'
-import { getPositions } from '../service/web3'
-
-import { BigNumber } from 'ethers'
-import { usePosition } from './usePosition'
-import { usePriceOrderingFromPositionForUI } from './usePriceOrderingFromPositionForUI'
+// import { useFullPosition } from 'position-uni-v3'
+import { formatCurrencyAmount, getRatio } from '../service/function'
+import { useEffect, useMemo, useState } from 'react'
+import Web3 from 'web3'
+import { useListPoolByAddress } from './useGetListPool'
+import { useGetRatioUSDC } from './useGetRatioUSDC'
 import { useInverter } from './useInverter'
+import { usePool } from './usePool'
+import { usePosition } from './usePosition'
+import { usePositionBasic } from './usePositionBasic'
+import { usePriceOrderingFromPositionForUI } from './usePriceOrderingFromPositionForUI'
 import { useSlot0 } from './useSlot0'
 import { useV3PositionFees } from './useV3PositionFees'
-import { useGetRatioUSDC } from './useGetRatioUSDC'
+const SupportedChainId = {
+  1: 'https://rpc.ankr.com/eth',
+  10: 'https://rpc.ankr.com/optimism',
+  137: 'https://rpc.ankr.com/polygon',
+  42161: 'https://rpc.ankr.com/arbitrum',
+  42220: 'https://rpc.ankr.com/celo'
+}
+const createWeb3NewBasic = (rpc) => {
+  let web3 = new Web3()
+  web3 = new Web3(new Web3.providers.HttpProvider(rpc))
+  return web3
+}
 
-export const useFullPosition = (idPool, chainId, listAllTokenSupport, web3) => {
-  const [isNoData, setIsNoData] = useState(true)
-  const [tokenPre, setTokenPre] = useState(null)
-  const [tokenSub, setTokenSub] = useState(null)
-  const [positionBasic, setPositionBasic] = useState(null)
-  const [ratioLiquidity, setRatioLiquidity] = useState(-1)
-  const [isChangeToken, setIsChangeToken] = useState(false)
-  const [loading, setLoading] = useState(true)
+export const useFullPosition = (address, chainId, listAllTokenSupport) => {
+  const [indexPool, setIndexPool] = useState(0)
+  const [listData, setListData] = useState([])
+  const [isFinish, setIsFinish] = useState(false)
+  const [listPoolState, setListPoolState] = useState([])
+  // use hook customs
+  const listPoolOfAddress = useListPoolByAddress(chainId, address)
 
+  useEffect(() => {
+    if (listPoolOfAddress?.listPoolId?.length > 0) {
+      console.log({ listPoolOfAddress })
+      setListPoolState([...listPoolState, listPoolOfAddress?.listPoolId])
+    }
+    if (
+      listPoolOfAddress?.listPoolId?.length === 0 &&
+      listPoolOfAddress?.noData
+    ) {
+      setTimeRadom()
+    }
+  }, [listPoolOfAddress])
+  const positionBasic = usePositionBasic(
+    listPoolOfAddress?.listPoolId[indexPool],
+    Number(chainId),
+    listAllTokenSupport,
+    createWeb3NewBasic(SupportedChainId[chainId])
+  )
   const slot0 = useSlot0(
-    tokenPre,
-    tokenSub,
-    positionBasic,
+    positionBasic?.tokenPre,
+    positionBasic?.tokenSub,
+    positionBasic?.positionBasic,
     chainId,
-    web3,
-    isChangeToken
+    createWeb3NewBasic(SupportedChainId[chainId]),
+    positionBasic?.isChangeToken
   )
-  const { poolHook, priceTokenPair } = usePool(
-    tokenPre,
-    tokenSub,
+
+  const { poolHook } = usePool(
+    positionBasic?.tokenPre,
+    positionBasic?.tokenSub,
     slot0,
-    positionBasic,
-    isChangeToken
+    positionBasic?.positionBasic,
+    positionBasic?.isChangeToken
   )
-  const { position } = usePosition(poolHook, positionBasic)
-  const pricesFromPositionHook = usePriceOrderingFromPositionForUI(position)
-  const [feeValue0, feeValue1] = useV3PositionFees(
+  const { positionSDK } = usePosition(poolHook, positionBasic?.positionBasic)
+  const pricesFromPositionHook = usePriceOrderingFromPositionForUI(positionSDK)
+  const inverterToken = useInverter(pricesFromPositionHook, false)
+
+  const { feeValue0, feeValue1 } = useV3PositionFees(
     poolHook,
-    idPool,
-    web3,
-    chainId
-  )
-  const { priceLower, priceUpper, base, quote } = useInverter(
-    pricesFromPositionHook,
+    listPoolOfAddress?.listPoolId[indexPool],
+    createWeb3NewBasic(SupportedChainId[chainId]),
+    chainId,
     false
   )
 
-  useEffect(() => {
-    const getDataBasic = async () => {
-      Promise.all([
-        setTokenPre(null),
-        setTokenSub(null),
-        setPositionBasic(null),
-        setRatioLiquidity(-1)
-      ])
-      getPositions(getPositionUniswapAddress(chainId), idPool, web3).then(
-        async (pos) => {
-          if (pos.liquidity) {
-            Promise.all([setIsChangeToken(true)]).then(async () => {
-              Promise.all([
-                setTokenPre(
-                  await getToken(pos.token0, chainId, listAllTokenSupport)
-                ),
-                setTokenSub(
-                  await getToken(pos.token1, chainId, listAllTokenSupport)
-                )
-              ]).then(() => {
-                setIsChangeToken(false)
-                setPositionBasic({
-                  ...pos,
-                  fee: Number(pos.fee),
-                  liquidity: BigNumber.from(pos.liquidity),
-                  tickLower: Number(pos.tickLower),
-                  tickUpper: Number(pos.tickUpper)
-                })
-                setIsNoData(false)
-              })
-            })
-          } else {
-            console.log({ pos })
-            setIsNoData(true)
-            setLoading(false)
-          }
-        }
-      )
-    }
-    if (listAllTokenSupport && chainId && web3 && idPool) {
-      Promise.all([setLoading(true), setIsNoData(false)]).then(() => {
-        console.log('again get position===================')
-        console.log({ loading })
-        getDataBasic()
-      })
-    }
-  }, [chainId, listAllTokenSupport, web3, idPool])
-
+  // use memo
   const unClaimFee = useMemo(() => {
-    if (tokenPre && tokenSub && feeValue0 && feeValue1) {
+    if (
+      positionBasic?.tokenPre &&
+      positionBasic?.tokenSub &&
+      feeValue0 &&
+      feeValue1 &&
+      !positionBasic?.isNoData
+    ) {
       const a = formatCurrencyAmount(feeValue0, 4).toString().includes('<')
         ? 0
         : formatCurrencyAmount(feeValue0, 4)
@@ -120,89 +104,132 @@ export const useFullPosition = (idPool, chainId, listAllTokenSupport, web3) => {
       }
     }
     return null
-  }, [tokenPre, tokenSub, feeValue0, feeValue1])
+  }, [feeValue0])
 
-  useEffect(() => {
-    if (position && poolHook && tokenPre && base) {
-      const inverted = tokenSub ? base?.equals(tokenSub) : undefined
+  const ratioLiquidity = useMemo(() => {
+    if (
+      positionSDK &&
+      poolHook &&
+      positionBasic?.tokenPre &&
+      inverterToken?.base
+    ) {
+      const inverted = positionBasic?.tokenSub
+        ? inverterToken?.base?.equals(positionBasic?.tokenSub)
+        : undefined
       const ratio = getRatio(
-        inverted ? priceLower : priceUpper.invert(),
+        inverted
+          ? inverterToken?.priceLower
+          : inverterToken?.priceUpper.invert(),
         poolHook.token0Price,
-        inverted ? priceUpper : priceLower.invert()
+        inverted
+          ? inverterToken?.priceUpper
+          : inverterToken?.priceLower.invert()
       )
-      if (ratioLiquidity >= -1 && Number(ratio) >= 0) {
-        setRatioLiquidity(Number(ratio))
-      }
-    }
-  }, [tokenSub, tokenPre, position, poolHook, base, priceLower, priceUpper])
-  const inRange = useMemo(() => {
-    if (position && poolHook) {
-      const below =
-        poolHook && Number(poolHook.tickCurrent) < Number(position?.tickLower)
-      const above =
-        poolHook && typeof positionBasic.tickUpper === 'number'
-          ? Number(poolHook.tickCurrent) >= Number(position?.tickUpper)
-          : undefined
-      const inRanges = !below && !above
-      return inRanges
+      return Number(ratio)
     }
     return null
-  }, [poolHook, position, positionBasic])
-  const symbol = useMemo(() => {
-    if (tokenPre && tokenSub) {
-      return {
-        symbolPre: tokenPre?.symbol,
-        symbolSub: tokenSub?.symbol
-      }
-    }
-  }, [tokenPre, tokenSub])
+  }, [inverterToken?.base])
 
   const liquidity = useMemo(() => {
-    if (position && ratioLiquidity >= -1) {
+    if (positionSDK && ratioLiquidity >= 0 && !positionBasic?.isNoData) {
       let ratioPre = ratioLiquidity
       let ratioSub = 100 - ratioLiquidity
       if (
-        Number(position?.amount0.toSignificant(4) ?? 0) === 0 &&
-        Number(position?.amount1.toSignificant(4) ?? 0) === 0
+        Number(positionSDK?.amount0.toSignificant(4) ?? 0) === 0 &&
+        Number(positionSDK?.amount1.toSignificant(4) ?? 0) === 0
       ) {
         ratioSub = 0
         ratioPre = 0
       }
       return {
-        liquidityPre: position?.amount0.toSignificant(4),
+        liquidityPre: positionSDK?.amount0.toSignificant(4),
         ratioPre,
-        liquiditySub: position?.amount1.toSignificant(4),
+        liquiditySub: positionSDK?.amount1.toSignificant(4),
         ratioSub
       }
     }
     return null
-  }, [position, ratioLiquidity])
-  const ratioUSDC = useGetRatioUSDC(tokenPre, tokenSub, liquidity, position)
+  }, [ratioLiquidity])
+  const inRange = useMemo(() => {
+    if (positionSDK && poolHook && !positionBasic?.isNoData) {
+      const below =
+        poolHook &&
+        Number(poolHook.tickCurrent) < Number(positionSDK?.tickLower)
+      const above =
+        poolHook && typeof positionBasic.tickUpper === 'number'
+          ? Number(poolHook.tickCurrent) >= Number(positionSDK?.tickUpper)
+          : undefined
+      const inRanges = !below && !above
+      return inRanges
+    }
+    return null
+  }, [positionSDK])
+  // especially
+  const ratioUSDC = useGetRatioUSDC(
+    positionBasic?.tokenPre,
+    positionBasic?.tokenSub,
+    liquidity,
+    positionSDK
+  )
+  // useEffect
 
   useEffect(() => {
-    if (liquidity && unClaimFee && ratioUSDC) {
-      setLoading(false)
+    if (positionBasic?.isNoData && positionBasic) {
+      setTimeRadom()
     }
-  }, [liquidity, unClaimFee, ratioUSDC])
+  }, [positionBasic])
+  useEffect(() => {
+    if (!positionBasic?.isNoData && positionBasic) {
+      if (
+        unClaimFee &&
+        ratioLiquidity >= 0 &&
+        liquidity &&
+        inRange !== null &&
+        !isNaN(ratioUSDC?.liquidityByUSDC) &&
+        ratioUSDC?.liquidityByUSDC
+      ) {
+        // console.log('having data')
+        const data = {
+          ratioLiquidity,
+          liquidity,
+          poolHook,
+          positionBasic,
+          ratioUSDC,
+          idPool: listPoolOfAddress?.listPoolId[indexPool],
+          chainId,
+          unClaimFee,
+          inRange,
+          symbolPre: positionBasic?.tokenPre?.symbol,
+          symbolSub: positionBasic?.tokenSub?.symbol
+        }
+        Promise.all([setListData((pre) => [...pre, data])]).then(() => {
+          setTimeRadom()
+        })
+      }
+    }
+  }, [ratioUSDC?.liquidityByUSDC, unClaimFee])
+
+  // use time count
+
+  const setTimeRadom = () => {
+    if (indexPool < listPoolOfAddress?.listPoolId.length - 1) {
+      setIndexPool(indexPool + 1)
+    } else {
+      setIsFinish(true)
+    }
+    if (listPoolOfAddress?.listPoolId.length === 0) {
+      setIsFinish(true)
+    }
+  }
+  const resetHook = () => {
+    setListData([])
+    setListPoolState([])
+    setIndexPool(0)
+    setIsFinish(false)
+  }
   return {
-    symbol,
-    priceLower,
-    priceUpper,
-    base,
-    quote,
-    liquidity,
-    unClaimFee,
-    position,
-    poolHook,
-    tokenPre,
-    tokenSub,
-    positionBasic,
-    inRange: inRange?.valueOf(),
-    loading,
-    priceTokenPair,
-    isNoData,
-    idPool,
-    ratioUSDC,
-    chainId
+    isFinish,
+    listData,
+    resetHook
   }
 }

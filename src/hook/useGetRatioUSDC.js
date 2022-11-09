@@ -10,14 +10,11 @@ export const useGetRatioUSDC = (token0, token1, liquidity, position) => {
       const symbol1 = token0.symbol
       const symbol2 = token1.symbol
       const getPriceTokenPre = async () => {
-        console.log(symbol1.toLowerCase())
-
         return await axios.get(
           `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&symbols=${symbol1.toLowerCase()}`
         )
       }
       const getPriceTokenSub = async () => {
-        console.log(symbol2.toLowerCase())
         return await axios.get(
           `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&symbols=${symbol2.toLowerCase()}`
         )
@@ -30,7 +27,7 @@ export const useGetRatioUSDC = (token0, token1, liquidity, position) => {
         setPriceAll(ob)
       })
     }
-  }, [token0, token1, liquidity, position])
+  }, [liquidity])
   const liquidityByUSDC = useMemo(() => {
     if (priceAll && position) {
       const pricePre = priceAll.price1 * position?.amount0.toSignificant(4)
@@ -39,7 +36,7 @@ export const useGetRatioUSDC = (token0, token1, liquidity, position) => {
       return (pricePre + priceSub).toFixed(2)
     }
     return null
-  }, [priceAll, position])
+  }, [priceAll])
 
   return {
     liquidityByUSDC,

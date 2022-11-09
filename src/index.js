@@ -5,5 +5,6 @@ export * from './hook/usePriceOrderingFromPositionForUI'
 export * from './constants/chain'
 export * from './constants/tokens'
 export * from './service/function'
-export * from './hook/useFullPosition'
+// @ts-ignore
+export * from './hook/useFullListPosition'
 export * from './hook/useSlot0'
