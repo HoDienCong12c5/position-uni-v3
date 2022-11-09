@@ -6,5 +6,5 @@ export * from './constants/chain'
 export * from './constants/tokens'
 export * from './service/function'
 // @ts-ignore
-export * from './hook/useFullListPosition'
+export * from './hook/useFullPosition'
 export * from './hook/useSlot0'

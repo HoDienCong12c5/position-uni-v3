@@ -92,7 +92,7 @@ export const getPositions = (contractAdress, tokenId, web3) => {
   })
 }
 export const getTokenSymbol = (coinContract, web3) => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       const minABI = [
         {
@@ -123,7 +123,7 @@ export const getTokenSymbol = (coinContract, web3) => {
   })
 }
 export const getSlot0 = (addressContract, web3) => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       const minABI = [
         {

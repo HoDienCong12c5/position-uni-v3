@@ -34,23 +34,25 @@ export const getRatio = (lower, current, upper) => {
 export const getPositionUniswapAddress = (chainId) => {
   return NONFUNGIBLE_POSITION_MANAGER_ADDRESSES[chainId]
 }
-export const getToken = async (address, chainId, listAllToken) => {
-  const tokenTemp = await listAllToken.find((item) =>
-    item.address.includes(address)
+export const getToken = (address, chainId, listAllToken) => {
+  const tokenTemp = listAllToken.find(
+    (item) => item.address.toUpperCase() === address.toUpperCase()
   )
   if (!tokenTemp) {
+    // console.log('no token')
     return null
   }
-
-  return new Token(
-    chainId,
+  // console.log('have token')
+  const tokenNew = new Token(
+    Number(chainId),
     address,
     tokenTemp.decimals,
     tokenTemp.symbol,
     tokenTemp.name
   )
+  return tokenNew
 }
-const getPoolAddress = async (factoryAddress, tokenA, tokenB, fee) => {
+const getPoolAddress = (factoryAddress, tokenA, tokenB, fee) => {
   if (tokenA?.sortsBefore(tokenB)) {
     return computePoolAddress({
       factoryAddress,

@@ -92,9 +92,7 @@ class UtilWeb3 {
             resolve(result)
           })
       } catch (error) {
-        console.log(
-          'error function tokenOfOwnerByIndex========================'
-        )
+        console.log('tokenOfOwnerByIndex========================')
         console.log({ error })
         console.log('====================================')
         resolve(-1)
