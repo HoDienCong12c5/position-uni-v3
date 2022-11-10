@@ -9,7 +9,7 @@
 ```bash
 npm install --save position-uni-v3@2.2.5
 ```
-## Install (mutil position for mtil address)
+## Install (mutil position for mutil address)
 
 ```bash
 npm install --save position-uni-v3
@@ -20,10 +20,11 @@ npm install --save position-uni-v3
 ```jsx
 import React,{useState,useEffect} from 'react'
 
-import {  useFullPosition} from 'position-uni-v3'
+import {  useFullListPosition} from 'position-uni-v3'
 const ExamplePosition=()=>{
   //code ...
-   const {isFinish,listData,resetHook} = useFullListPosition(address, chainId, listAllTokenSupport)
+  const listChainSupport = [1,2,4,6]
+   const {isFinish,listData,resetHook} = useFullListPosition(address, chainId, web3, listTokenPool, listChainSupport)
   //code....
   ///.....
 }

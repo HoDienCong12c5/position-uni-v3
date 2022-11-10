@@ -11,27 +11,24 @@ import { usePositionBasic } from './usePositionBasic'
 import { usePriceOrderingFromPositionForUI } from './usePriceOrderingFromPositionForUI'
 import { useSlot0 } from './useSlot0'
 import { useV3PositionFees } from './useV3PositionFees'
-const SupportedChainId = {
-  1: 'https://rpc.ankr.com/eth',
-  10: 'https://rpc.ankr.com/optimism',
-  137: 'https://rpc.ankr.com/polygon',
-  42161: 'https://rpc.ankr.com/arbitrum',
-  42220: 'https://rpc.ankr.com/celo'
-}
-const createWeb3NewBasic = (rpc) => {
-  let web3 = new Web3()
-  web3 = new Web3(new Web3.providers.HttpProvider(rpc))
-  return web3
-}
-
-export const useFullPosition = (address, chainId, listAllTokenSupport) => {
+export const useFullPosition = (
+  address,
+  chainId,
+  web3,
+  listAllTokenSupport,
+  listChainSupport
+) => {
   const [indexPool, setIndexPool] = useState(0)
   const [listData, setListData] = useState([])
   const [isFinish, setIsFinish] = useState(false)
   const [listPoolState, setListPoolState] = useState([])
   // use hook customs
-  const listPoolOfAddress = useListPoolByAddress(chainId, address)
-
+  const listPoolOfAddress = useListPoolByAddress(
+    chainId,
+    address,
+    web3,
+    listChainSupport
+  )
   useEffect(() => {
     if (listPoolOfAddress?.listPoolId?.length > 0) {
       console.log({ listPoolOfAddress })
@@ -48,14 +45,14 @@ export const useFullPosition = (address, chainId, listAllTokenSupport) => {
     listPoolOfAddress?.listPoolId[indexPool],
     Number(chainId),
     listAllTokenSupport,
-    createWeb3NewBasic(SupportedChainId[chainId])
+    web3
   )
   const slot0 = useSlot0(
     positionBasic?.tokenPre,
     positionBasic?.tokenSub,
     positionBasic?.positionBasic,
     chainId,
-    createWeb3NewBasic(SupportedChainId[chainId]),
+    web3,
     positionBasic?.isChangeToken
   )
 
@@ -73,7 +70,7 @@ export const useFullPosition = (address, chainId, listAllTokenSupport) => {
   const { feeValue0, feeValue1 } = useV3PositionFees(
     poolHook,
     listPoolOfAddress?.listPoolId[indexPool],
-    createWeb3NewBasic(SupportedChainId[chainId]),
+    web3,
     chainId,
     false
   )
