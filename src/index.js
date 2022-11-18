@@ -1,10 +1,6 @@
-export * from './hook/useInverter'
-export * from './hook/usePool'
 export * from './hook/usePosition'
-export * from './hook/usePriceOrderingFromPositionForUI'
 export * from './constants/chain'
 export * from './constants/tokens'
 export * from './service/function'
 // @ts-ignore
 export * from './hook/useFullPosition'
-export * from './hook/useSlot0'

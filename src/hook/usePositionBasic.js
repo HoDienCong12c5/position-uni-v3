@@ -22,7 +22,11 @@ export const usePositionBasic = (
         Number(idPool),
         web3
       ).then((pos) => {
-        if (pos.liquidity && listAllTokenSupport?.length > 0) {
+        if (
+          pos.liquidity &&
+          listAllTokenSupport &&
+          listAllTokenSupport?.length > 0
+        ) {
           // const toekn1 = await getToken(pos.token0, chainId, listAllTokenSupport)
           // const toekn2 = await getToken(pos.token1, chainId, listAllTokenSupport)
           // console.log({ toekn1, toekn2 })
@@ -30,9 +34,7 @@ export const usePositionBasic = (
 
           Promise.all([
             setTokenPre(getToken(pos.token0, chainId, listAllTokenSupport)),
-            setTokenSub(getToken(pos.token1, chainId, listAllTokenSupport))
-          ])
-          Promise.all([
+            setTokenSub(getToken(pos.token1, chainId, listAllTokenSupport)),
             setIsChangeToken(false),
             setPositionBasic({
               ...pos,

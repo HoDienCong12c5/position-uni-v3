@@ -12,7 +12,7 @@ npm install --save position-uni-v3@2.2.5
 ## Install (mutil position for mutil address and having chain default not add chain new support)
 
 ```bash
-npm install --save position-uni-v3@3.0.3
+npm install --save position-uni-v3@3.0.5
 ```
 ## Install (mutil position for mutil address)
 
@@ -23,25 +23,30 @@ npm install --save position-uni-v3
 ## Usage
 
 ```jsx 
-//for version 3.0.3
+//for version 3.0.5
 import React,{useState,useEffect} from 'react'
 
 import {  useFullListPosition} from 'position-uni-v3'
 const ExamplePosition=()=>{
   //code ...
-  const listChainSupport = [1,2,4,6]
-   const {isFinish,listData,resetHook} = useFullListPosition(address, chainId, listTokenPool,)
+   const {isFinish,listData,resetHook} = useFullListPosition(address, chainId, listTokenPool)
   //code....
   ///.....
 }
 //use for version laster
 import React,{useState,useEffect} from 'react'
 
-import {  useFullListPosition} from 'position-uni-v3'
+import {  useFullPosition} from 'position-uni-v3'
 const ExamplePosition=()=>{
   //code ...
   const listChainSupport = [1,2,4,6]
-   const {isFinish,listData,resetHook} = useFullListPosition(address, chainId, web3, listTokenPool, listChainSupport)
+  const {isFinish,listData,resetHook} = useFullPosition(
+    address,
+    chainId,
+    createWeb3NewBasic('your rpc'),
+    listTokenPool,
+    listChainSupport
+  )
   //code....
   ///.....
 }

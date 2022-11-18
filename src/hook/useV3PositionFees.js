@@ -19,9 +19,13 @@ export function useV3PositionFees(
     const getAmountPairToken = async () => {
       const contractAddress = getPositionUniswapAddress(chainId)
       const owner = await getOwnerOf(contractAddress, tokenId, web3)
+      // tokenId = tokenId?.toHexString()
+      let tokenString = tokenId + ''
+      // @ts-ignore
+      tokenString = tokenString.toString(16)
       await getPositionFee(
         contractAddress,
-        tokenId,
+        tokenString,
         owner,
         MAX_UINT128,
         MAX_UINT128,
